@@ -1,0 +1,46 @@
+[
+    {
+        "id": ,
+        "roommates": {
+            "name": "",
+            "begin_date": "YYYY-MM-DD",
+            "end_date": "YYYY-MM-DD",
+            "members": [
+                {
+                    "nickname": null,
+                    "name": ""
+                },
+                {
+                    "nickname": "",
+                    "name": ""
+                }
+            ]
+        },
+        "address": "",
+        "details": "",
+        "latitude": 00.00000,
+        "longitude": -00.00000
+    },
+    {
+        "id": ,
+        "roommates": {
+            "name": "",
+            "begin_date": "YYYY-MM-DD",
+            "end_date": "YYYY-MM-DD",
+            "members": [
+                {
+                    "nickname": null,
+                    "name": ""
+                },
+                {
+                    "nickname": "",
+                    "name": ""
+                }
+            ]
+        },
+        "address": "",
+        "details": "",
+        "latitude": 00.00000,
+        "longitude": 00.00000
+    }
+]
