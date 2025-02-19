@@ -2,7 +2,9 @@ import argparse
 from xmlrpc.client import boolean
 import networkx as nx
 import matplotlib.pyplot as plt
-import os 
+import os
+import numpy as np
+
 #CARTE
 import json
 import plotly.graph_objects as go
@@ -37,7 +39,7 @@ with open(path+'/template-bdd-coloc.json', 'r') as json_file:
 # Chargement du fichier JSON contenant les détails des correspondances de couleurs
 with open(path+'/template-bdd-couleurs.json', 'r') as json_file:
     couleurs_data = json.load(json_file)
-    
+
 
 # Création du graphe
 G = nx.Graph()
@@ -99,43 +101,106 @@ elif args.method == 'fruchterman':
 coloc_markers = []
 liens_lines = []
 
+## Initialisation d
+person_coords = {}
 
 # Ajouter les marqueurs pour chaque colocation
 for colocation in coloc_data:
     coloc_name = colocation['roommates']['name']
     coloc_latitude = colocation['latitude']
     coloc_longitude = colocation['longitude']
-    
+    coloc_roommates = colocation['roommates']['members']
+
+    theta = np.linspace(0, 2*np.pi, 100)
+    circle_lat = coloc_latitude + 0.001 * np.sin(theta)
+    circle_lon = coloc_longitude + 0.001 * np.cos(theta)
+
     # Ajouter un marqueur pour chaque colocation
     coloc_markers.append(
-        go.Scattermapbox(
-            lat=[coloc_latitude],
-            lon=[coloc_longitude],
-            mode='markers',
-            marker=dict(size=10),
-            text=coloc_name,
+        go.Scattermap(
+            lat=circle_lat,
+            lon=circle_lon,
+            mode="lines",
+            fill="toself",  # Fills the circle shape
+            fillcolor="rgba(0, 0, 255, 0.3)",  # Transparent blue
+            line=dict(width=2, color="blue"),
+            name=coloc_name
+        )
+    )
+
+    # Calcul des lat/lon des individus dans une colocation pour les disposer en cercle
+    num_roommates = len(coloc_roommates)
+    if num_roommates > 1:
+        theta = np.linspace(0, 2*np.pi, num_roommates, endpoint=False)
+        roommate_lat, roommate_lon = coloc_latitude + 0.0005 * np.sin(theta), coloc_longitude + 0.0005 * np.cos(theta)
+    else:
+        roommate_lat, roommate_lon = [coloc_latitude], [coloc_longitude]
+
+
+    # Ajout des markers pour les individus dans la colocation
+    coloc_markers.append(
+        go.Scattermap(
+            lat=roommate_lat.tolist(),
+            lon=roommate_lon.tolist(),
+            mode='markers+text',
+            marker=dict(size=8, color='red'),
+            text=[rm['name'] for rm in coloc_roommates],
+            name=coloc_name,
             hoverinfo='text'
         )
     )
 
+    # Sauvegarde des coordonnes de chaque personne (utilisé pour tracer les liens)
+    for i, rm in enumerate(coloc_roommates):
+        person_coords[rm["name"]] = {
+            "coloc": coloc_name,
+            "latitude": roommate_lat[i],
+            "longitude": roommate_lon[i]
+        }
 
 
 # Ajouter les lignes pour représenter les liens
+for edge in G.edges():
+    friend1, friend2 = edge
+
+    if friend1 in person_coords and friend2 in person_coords:
+        lat1, lon1 = person_coords[friend1]["latitude"], person_coords[friend1]["longitude"]
+        lat2, lon2 = person_coords[friend2]["latitude"], person_coords[friend2]["longitude"]
+
+        ## Tracé des liens
+        liens_lines.append(
+            go.Scattermap(
+                lat=[lat1, lat2],
+                lon=[lon1, lon2],
+                mode="lines",
+                line=dict(width=2, color="black"),
+                name=f"{friend1}-{friend2}"
+            )
+        )
+
+
+
+
+## TEMPORAIRE, SI BESOIN DES NOM DE COLOC ETC
 # for edge in G.edges():
 #     friend1, friend2 = edge
-#     friend1_data = coloc_data.get(friend1, {})
-#     friend2_data = coloc_data.get(friend2, {})
+#     ## Chercher les informations des colocations des deux personnes
+#     for coloc in coloc_data:
+#         membres = [personne["name"] for personne in coloc["roommates"]["members"]]
+#         if friend1 in membres:
+#             coloc_friend1 = coloc
+#         if friend2 in membres:
+#             coloc_friend2 = coloc
     
-#     if friend1_data and friend2_data:
-#         liens_lines.append(
-#             go.Scattermapbox(
-#                 lat=[friend1_data['latitude'], friend2_data['latitude']],
-#                 lon=[friend1_data['longitude'], friend2_data['longitude']],
-#                 mode='lines',
-#                 line=dict(width=1, color='blue'),
-#                 hoverinfo='none'
-#             )
-#         )
+#     if coloc_friend1 and coloc_friend2: #Si les deux personnes ont bien une colocation
+
+#         if coloc_friend1 == coloc_friend2: #Si les deux sont dans la meme colocation
+#             friend1_lat
+#             friend1_lon
+
+#             friend
+#         else:
+
 
 config={
     'displayModeBar': True,
@@ -166,7 +231,7 @@ if args.center == "Nantes":
     fig.update_layout(
         mapbox=dict(
             style="open-street-map",
-            zoom=10,
+            zoom=100,
             center=dict(lat=nantes_lat, lon=nantes_lon)  # Centre sur Nantes
         )
     )
@@ -177,7 +242,7 @@ elif args.center == "Mean":
     fig.update_layout(
         mapbox=dict(
             style="open-street-map",
-            zoom=10,
+            zoom=100,
             center=dict(lat=average_lat, lon=average_lon)  # Utilisation des coordonnées moyennes
         )
     )
@@ -188,13 +253,15 @@ elif args.center == "Coloc":
     fig.update_layout(
         mapbox=dict(
             style="open-street-map",
-            zoom=10,
+            zoom=100,
             center=dict(lat=47.215740, lon=-1.558080)  # Centre sur Nantes
         )
     )
+else:
+    fig = go.Figure(data=coloc_markers + liens_lines)
+    fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=100)
     
 # Affichage de la carte
 fig.show()
-
 
 
