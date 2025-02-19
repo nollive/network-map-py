@@ -26,11 +26,11 @@ args = parse_arguments()
 # Récuperation du wd où sont placés le fichier python ainsi que les bases de données .json
 path = os.getcwd()
 # Chargement du fichier JSON contenant les liens entre les noeuds
-with open(path+'/bdd-lien.json', 'r') as json_file:
+with open(path+'/template-bdd-liens.json', 'r') as json_file:
     personnes_data = json.load(json_file)
 
 # Chargement du fichier JSON contenant les détails des correspondances de couleurs
-with open(path+'/bdd-couleurs.json', 'r') as json_file:
+with open(path+'/template-bdd-couleurs.json', 'r') as json_file:
     couleurs_data = json.load(json_file)
     
 
